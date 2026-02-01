@@ -1,1 +1,425 @@
+  <!DOCTYPE html>
+  <html lang="de">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎮 Verb-Meister - Konjugations-Spiel</title>
+    <style>
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      body {
+        font-family: 'Comic Sans MS', 'Segoe UI', sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        padding: 20px;
+      }
+      .container {
+        max-width: 600px;
+        margin: 0 auto;
+        background: white;
+        border-radius: 20px;
+        padding: 30px;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+      }
+      h1 { text-align: center; color: #764ba2; margin-bottom: 10px; font-size: 2em; }
+      .subtitle { text-align: center; color: #666; margin-bottom: 20px; }
+      .welcome-screen, .start-screen, .game-screen, .result-screen { display: none; }
+      .welcome-screen.active, .start-screen.active, .game-screen.active, .result-screen.active { display: block; }
+      .btn {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+        border: none;
+        padding: 15px 40px;
+        font-size: 1.2em;
+        border-radius: 30px;
+        cursor: pointer;
+        display: block;
+        margin: 20px auto;
+        transition: transform 0.2s, box-shadow 0.2s;
+      }
+      .btn:hover { transform: scale(1.05); box-shadow: 0 5px 20px rgba(102,126,234,0.5); }
+      .btn:disabled { background: #ccc; cursor: not-allowed; transform: none; }
+      .progress-bar {
+        background: #e0e0e0;
+        border-radius: 10px;
+        height: 20px;
+        margin-bottom: 20px;
+        overflow: hidden;
+      }
+      .progress-fill {
+        background: linear-gradient(90deg, #667eea, #764ba2);
+        height: 100%;
+        transition: width 0.3s;
+        border-radius: 10px;
+      }
+      .question-box {
+        background: #f8f9fa;
+        border-radius: 15px;
+        padding: 25px;
+        margin-bottom: 20px;
+        border-left: 5px solid #764ba2;
+      }
+      .question-number { color: #764ba2; font-weight: bold; margin-bottom: 10px; }
+      .question-text { font-size: 1.3em; color: #333; line-height: 1.6; }
+      .verb-highlight { color: #667eea; font-weight: bold; }
+      .zeit-badge {
+        display: inline-block;
+        background: #764ba2;
+        color: white;
+        padding: 5px 15px;
+        border-radius: 20px;
+        font-size: 0.9em;
+        margin-bottom: 15px;
+      }
+      .answer-input, .name-input {
+        width: 100%;
+        padding: 15px;
+        font-size: 1.2em;
+        border: 3px solid #e0e0e0;
+        border-radius: 10px;
+        margin-bottom: 15px;
+        transition: border-color 0.3s;
+        text-align: center;
+      }
+      .answer-input:focus, .name-input:focus { outline: none; border-color: #667eea; }
+      .feedback {
+        padding: 15px;
+        border-radius: 10px;
+        margin-bottom: 15px;
+        display: none;
+        font-weight: bold;
+        text-align: center;
+      }
+      .feedback.correct { display: block; background: #d4edda; color: #155724; }
+      .feedback.wrong { display: block; background: #f8d7da; color: #721c24; }
+      .score-display {
+        text-align: center;
+        font-size: 1.1em;
+        color: #666;
+        margin-bottom: 15px;
+      }
+      .player-name {
+        color: #764ba2;
+        font-weight: bold;
+      }
+      .result-box {
+        text-align: center;
+        padding: 30px;
+      }
+      .grade {
+        font-size: 5em;
+        font-weight: bold;
+        margin: 20px 0;
+      }
+      .grade-1 { color: #28a745; }
+      .grade-2 { color: #5cb85c; }
+      .grade-3 { color: #f0ad4e; }
+      .grade-4 { color: #ff9800; }
+      .grade-5 { color: #e67e22; }
+      .grade-6 { color: #dc3545; }
+      .result-text { font-size: 1.3em; margin-bottom: 10px; }
+      .result-details { color: #666; margin-bottom: 20px; font-size: 1.2em; }
+      .stars { font-size: 2em; margin: 15px 0; }
+      .mascot { font-size: 4em; margin-bottom: 15px; }
+      .info-box {
+        background: #e8f4fd;
+        border-radius: 10px;
+        padding: 15px;
+        margin-top: 20px;
+        font-size: 0.9em;
+        color: #0c5460;
+      }
+      .grade-explanation {
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 15px;
+        margin-top: 15px;
+        font-size: 0.9em;
+      }
+      .grade-scale {
+        display: flex;
+        justify-content: space-around;
+        flex-wrap: wrap;
+        gap: 5px;
+        margin-top: 10px;
+      }
+      .grade-item {
+        padding: 5px 10px;
+        border-radius: 5px;
+        font-size: 0.85em;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <!-- WELCOME SCREEN - Name eingeben -->
+      <div class="welcome-screen active" id="welcomeScreen">
+        <h1>🎮 Verb-Meister</h1>
+        <p class="subtitle">Lerne deutsche Verben spielend!</p>
+        <div class="mascot">🦊</div>
+        <p style="text-align:center; margin-bottom:20px; font-size: 1.2em;">
+          Hallo! Ich bin Finn der Fuchs!<br>
+          <strong>Wie heißt du?</strong>
+        </p>
+        <input type="text" class="name-input" id="nameInput" placeholder="Dein Name..." maxlength="20">
+        <button class="btn" id="startWithNameBtn" onclick="saveName()" disabled>👋 Hallo!</button>
+      </div>
 
+      <!-- START SCREEN -->
+      <div class="start-screen" id="startScreen">
+        <h1>🎮 Verb-Meister</h1>
+        <p class="subtitle">Lerne deutsche Verben spielend!</p>
+        <div class="mascot">🦊</div>
+        <p style="text-align:center; margin-bottom:20px; font-size: 1.2em;">
+          Hallo <span class="player-name" id="playerNameDisplay"></span>! 🎉<br>
+          Schön, dass du da bist!
+        </p>
+        <p style="text-align:center; margin-bottom:20px;">
+          Du bekommst <strong>20 Fragen</strong> zu deutschen Verben.<br>
+          Am Ende bekommst du eine <strong>Note von 1 bis 6</strong>!
+        </p>
+        <div class="info-box">
+          <strong>📚 Das lernst du:</strong><br>
+          • Präsens (ich gehe)<br>
+          • Präteritum (ich ging)<br>
+          • Perfekt (ich bin gegangen)
+        </div>
+        <button class="btn" onclick="startGame()">🚀 Spiel starten!</button>
+        <button class="btn" style="background: #6c757d; padding: 10px 20px; font-size: 1em;" onclick="changeName()">👤 Anderer Spieler</button>
+      </div>
+
+      <!-- GAME SCREEN -->
+      <div class="game-screen" id="gameScreen">
+        <div class="score-display">
+          🎮 <span class="player-name" id="playerNameGame"></span> | ⭐ Punkte: <span id="currentScore">0</span> / <span id="totalQuestions">20</span>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill" id="progressBar" style="width: 0%"></div>
+        </div>
+        <div class="question-box">
+          <div class="question-number" id="questionNumber">Frage 1 von 20</div>
+          <span class="zeit-badge" id="zeitBadge">Präsens</span>
+          <p class="question-text" id="questionText"></p>
+        </div>
+        <input type="text" class="answer-input" id="answerInput" placeholder="Deine Antwort..." autocomplete="off">
+        <div class="feedback" id="feedback"></div>
+        <button class="btn" id="submitBtn" onclick="checkAnswer()">✓ Prüfen</button>
+      </div>
+
+      <!-- RESULT SCREEN -->
+      <div class="result-screen" id="resultScreen">
+        <div class="result-box">
+          <div class="mascot" id="resultMascot">🦊</div>
+          <p class="result-text" id="resultText"></p>
+          <div class="stars" id="starsDisplay"></div>
+          <div class="result-details" id="resultDetails"></div>
+          <p style="font-size: 1.1em; margin-bottom: 10px;">Deine Note:</p>
+          <div class="grade" id="gradeDisplay"></div>
+          <div class="grade-explanation">
+            <strong>📊 Notenspiegel:</strong>
+            <div class="grade-scale">
+              <span class="grade-item" style="background: #d4edda;">1 = 19-20</span>
+              <span class="grade-item" style="background: #d4edda;">2 = 17-18</span>
+              <span class="grade-item" style="background: #fff3cd;">3 = 14-16</span>
+              <span class="grade-item" style="background: #fff3cd;">4 = 10-13</span>
+              <span class="grade-item" style="background: #f8d7da;">5 = 6-9</span>
+              <span class="grade-item" style="background: #f8d7da;">6 = 0-5</span>
+            </div>
+          </div>
+          <button class="btn" onclick="startGame()">🔄 Nochmal spielen!</button>
+          <button class="btn" style="background: #28a745;" onclick="showStart()">🏠 Zum Start</button>
+          <button class="btn" style="background: #6c757d; padding: 10px 20px; font-size: 1em;" onclick="changeName()">👤 Anderer Spieler</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="verben.js"></script>
+    <script>
+      const zeiten = ['präsens', 'präteritum', 'perfekt'];
+      const pronomen = ['ich', 'du', 'er/sie/es', 'wir', 'ihr', 'sie'];
+
+      let playerName = '';
+      let currentQuestion = 0;
+      let score = 0;
+      let questions = [];
+      let answered = false;
+
+      // Name-Input aktiviert Button
+      document.getElementById('nameInput').addEventListener('input', function() {
+        const btn = document.getElementById('startWithNameBtn');
+        btn.disabled = this.value.trim().length === 0;
+      });
+
+      // Enter-Taste für Name
+      document.getElementById('nameInput').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter' && this.value.trim().length > 0) {
+          saveName();
+        }
+      });
+
+      function saveName() {
+        playerName = document.getElementById('nameInput').value.trim();
+        document.getElementById('playerNameDisplay').textContent = playerName;
+        document.getElementById('playerNameGame').textContent = playerName;
+        
+        document.getElementById('welcomeScreen').classList.remove('active');
+        document.getElementById('startScreen').classList.add('active');
+      }
+
+      function changeName() {
+        document.getElementById('nameInput').value = '';
+        document.getElementById('startWithNameBtn').disabled = true;
+        
+        document.getElementById('startScreen').classList.remove('active');
+        document.getElementById('resultScreen').classList.remove('active');
+        document.getElementById('gameScreen').classList.remove('active');
+        document.getElementById('welcomeScreen').classList.add('active');
+        
+        document.getElementById('nameInput').focus();
+      }
+
+      function shuffleArray(array) {
+        const newArray = [...array];
+        for (let i = newArray.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+        }
+        return newArray;
+      }
+
+      function generateQuestions() {
+        questions = [];
+        const usedCombinations = new Set();
+        
+        while (questions.length < 20) {
+          const verb = verben[Math.floor(Math.random() * verben.length)];
+          const zeit = zeiten[Math.floor(Math.random() * zeiten.length)];
+          const person = pronomen[Math.floor(Math.random() * pronomen.length)];
+          
+          const combination = `${verb.infinitiv}-${zeit}-${person}`;
+          if (usedCombinations.has(combination)) continue;
+          usedCombinations.add(combination);
+          
+          let correctAnswer;
+          let questionText;
+          
+          if (zeit === 'perfekt') {
+            const hilfsverb = verb.perfekt.hilfsverb;
+            const seinVerb = verben.find(v => v.infinitiv === 'sein');
+            const habenVerb = verben.find(v => v.infinitiv === 'haben');
+            const hilfsverbForm = hilfsverb === 'sein' 
+              ? seinVerb.präsens[person] 
+              : habenVerb.präsens[person];
+            correctAnswer = hilfsverbForm + ' ' + verb.perfekt.partizip;
+            questionText = `<span class="verb-highlight">${verb.infinitiv}</span> im Perfekt mit "<strong>${person}</strong>"`;
+          } else {
+            correctAnswer = verb[zeit][person];
+            const zeitName = zeit === 'präsens' ? 'Präsens' : 'Präteritum';
+            questionText = `<span class="verb-highlight">${verb.infinitiv}</span> im ${zeitName} mit "<strong>${person}</strong>"`;
+          }
+          
+          questions.push({
+            verb: verb.infinitiv,
+            zeit: zeit,
+            person: person,
+            correctAnswer: correctAnswer,
+            questionText: questionText
+          });
+        }
+      }
+
+      function startGame() {
+        currentQuestion = 0;
+        score = 0;
+        answered = false;
+        generateQuestions();
+        
+        document.getElementById('startScreen').classList.remove('active');
+        document.getElementById('resultScreen').classList.remove('active');
+        document.getElementById('gameScreen').classList.add('active');
+        
+        showQuestion();
+      }
+
+      function showQuestion() {
+        answered = false;
+        const q = questions[currentQuestion];
+        
+        document.getElementById('questionNumber').textContent = `Frage ${currentQuestion + 1} von 20`;
+        document.getElementById('progressBar').style.width = `${(currentQuestion / 20) * 100}%`;
+        document.getElementById('currentScore').textContent = score;
+        
+        const zeitNames = { präsens: '⏰ Präsens', präteritum: '📜 Präteritum', perfekt: '✅ Perfekt' };
+        document.getElementById('zeitBadge').textContent = zeitNames[q.zeit];
+        document.getElementById('questionText').innerHTML = q.questionText;
+        
+        document.getElementById('answerInput').value = '';
+        document.getElementById('answerInput').focus();
+        document.getElementById('feedback').className = 'feedback';
+        document.getElementById('submitBtn').textContent = '✓ Prüfen';
+      }
+
+      function checkAnswer() {
+        if (!answered) {
+          const userAnswer = document.getElementById('answerInput').value.trim().toLowerCase();
+          const correctAnswer = questions[currentQuestion].correctAnswer.toLowerCase();
+          const feedback = document.getElementById('feedback');
+          
+          if (userAnswer === correctAnswer) {
+            score++;
+            feedback.textContent = `🎉 Super, ${playerName}! Das ist richtig!`;
+            feedback.className = 'feedback correct';
+          } else {
+            feedback.innerHTML = `❌ Leider falsch, ${playerName}. Richtig wäre: <strong>${questions[currentQuestion].correctAnswer}</strong>`;
+            feedback.className = 'feedback wrong';
+          }
+          
+          document.getElementById('currentScore').textContent = score;
+          document.getElementById('submitBtn').textContent = '➡️ Weiter';
+          answered = true;
+        } else {
+          currentQuestion++;
+          if (currentQuestion < 20) {
+            showQuestion();
+          } else {
+            showResults();
+          }
+        }
+      }
+
+      function showResults() {
+        document.getElementById('gameScreen').classList.remove('active');
+        document.getElementById('resultScreen').classList.add('active');
+        
+        // Deutsches Notensystem
+        let grade, gradeClass, stars, mascot, text;
+        
+        if (score >= 19) { grade = 1; gradeClass = 'grade-1'; stars = '⭐⭐⭐⭐⭐'; mascot = '🏆'; text = `FANTASTISCH, ${playerName}! Du bist ein Verb-Meister!`; }
+        else if (score >= 17) { grade = 2; gradeClass = 'grade-2'; stars = '⭐⭐⭐⭐'; mascot = '🎉'; text = `Super gemacht, ${playerName}! Weiter so!`; }
+        else if (score >= 14) { grade = 3; gradeClass = 'grade-3'; stars = '⭐⭐⭐'; mascot = '😊'; text = `Gut, ${playerName}! Übung macht den Meister!`; }
+        else if (score >= 10) { grade = 4; gradeClass = 'grade-4'; stars = '⭐⭐'; mascot = '💪'; text = `Nicht schlecht, ${playerName}! Übe weiter!`; }
+        else if (score >= 6) { grade = 5; gradeClass = 'grade-5'; stars = '⭐'; mascot = '📚'; text = `Du schaffst das, ${playerName}! Probier es nochmal!`; }
+        else { grade = 6; gradeClass = 'grade-6'; stars = '📖'; mascot = '🤗'; text = `Kopf hoch, ${playerName}! Übung macht den Meister!`; }
+        
+        document.getElementById('resultMascot').textContent = mascot;
+        document.getElementById('resultText').textContent = text;
+        document.getElementById('gradeDisplay').textContent = grade;
+        document.getElementById('gradeDisplay').className = `grade ${gradeClass}`;
+        document.getElementById('starsDisplay').textContent = stars;
+        document.getElementById('resultDetails').innerHTML = `<strong>${score} von 20</strong> Fragen richtig!`;
+      }
+
+      function showStart() {
+        document.getElementById('resultScreen').classList.remove('active');
+        document.getElementById('gameScreen').classList.remove('active');
+        document.getElementById('startScreen').classList.add('active');
+      }
+
+      // Enter-Taste zum Prüfen
+      document.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter' && document.getElementById('gameScreen').classList.contains('active')) {
+          checkAnswer();
+        }
+      });
+    </script>
+  </body>
+  </html>
